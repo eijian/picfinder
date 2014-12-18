@@ -9,7 +9,8 @@ import System.Directory
 import Data.List.Split
 import Data.Char
 
-picext = "png"
+picext = "JPG"
+delimiter = "/"
 
 main :: IO ()
 main = do
@@ -25,10 +26,10 @@ getFileLists f = do
 isJpeg :: String -> Bool
 isJpeg f = if ext == picext then True else False
   where
-  ext = last $ splitOn "." f
+  ext = map toUpper (last $ splitOn "." f)
 
 toFileInfo :: String -> String -> (String, String)
-toFileInfo d f = (d ++ "\\" ++ f, f)
+toFileInfo d f = (d ++ delimiter ++ f, f)
 
 putPics :: [(String, String)] -> IO ()
 putPics [] = putStr ""
