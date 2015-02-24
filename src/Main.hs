@@ -4,10 +4,11 @@
 
 module Main where
 
-import System.Environment
 import System.Directory
+import System.Environment
 import Data.List.Split
 import Data.Char
+import Finder
 
 picext = "JPG"
 delimiter = "/"
@@ -16,23 +17,25 @@ main :: IO ()
 main = do
   ds <- getArgs
   fs <- mapM getFileLists ds
-  putPics $ concat fs
+  putGroups $ findSame $ concat fs
 
-getFileLists :: FilePath -> IO [(String, String)]
-getFileLists f = do
-  fs <- getDirectoryContents f
-  return $ map (toFileInfo f) (filter isJpeg fs)
+getFileLists :: FilePath -> IO [String]
+getFileLists d = do
+  fs <- getDirectoryContents d
+  return $ map (\ x -> d ++ delimiter ++ x) (filter isJpeg fs)
 
 isJpeg :: String -> Bool
 isJpeg f = if ext == picext then True else False
   where
   ext = map toUpper (last $ splitOn "." f)
 
-toFileInfo :: String -> String -> (String, String)
-toFileInfo d f = (d ++ delimiter ++ f, f)
+putGroups :: [[String]] -> IO ()
+putGroups [] = putStr ""
+putGroups (p:ps) = do
+  putStrLn ("probably same: " ++ showGroup p)
+  putGroups ps
 
-putPics :: [(String, String)] -> IO ()
-putPics [] = putStr ""
-putPics (p:ps) = do
-  putStrLn $ fst p
-  putPics ps
+showGroup :: [String] -> String
+showGroup [] = ""
+showGroup (f:[]) = f
+showGroup (f:fs) = f ++ ", " ++ showGroup fs
