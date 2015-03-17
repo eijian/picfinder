@@ -7,7 +7,6 @@ module Finder where
 import Data.ByteString as B (pack, unpack)
 import Data.ByteString.Char8 as BS (ByteString, hGet)
 import Data.List
---import Data.Map as Map (Map, elems, empty, insert, lookup)
 import Data.Word
 import System.IO
 import System.Process
@@ -19,20 +18,7 @@ type Edge = (FilePath, FilePath)
 findSame :: [FilePath] -> IO [[FilePath]]
 findSame fs = do
   fps <- mapM (getFingerPrint 4) fs
-  -- let es = Map.elems $ foldl insertItem Map.empty (zip fps fs)
-  -- return $ filter (\x -> length x > 1) es
   return $ matchImage $ zip fps fs
-
-{-
-insertItem :: Map FingerPrint [FilePath] -> Image -> Map FingerPrint [FilePath]
-insertItem m x = Map.insert k l m
-  where
-    k = fst x
-    l = toList x (Map.lookup k m)
-    toList :: Image -> Maybe [FilePath] -> [FilePath]
-    toList x Nothing = [snd x]
-    toList x (Just l) = (snd x:l)
--}
 
 matchImage :: [Image] -> [[FilePath]]
 matchImage []     = []
@@ -71,11 +57,6 @@ getFingerPrint r f = do
     size = r * r * 3
     command = "convert -filter Cubic -resize " ++ geo ++ "! "
            ++ f ++ " PPM:- | tail -c " ++ (show size)
+
 getFingerPrint4 = getFingerPrint 4
 
-{-
-  -- "-define" option is bad...
-    command = "convert -define jpeg:size=" ++ geo
-           ++ " -filter Cubic -resize " ++ geo ++ "! "
-           ++ f ++ " PPM:- | tail -c " ++ (show size)
--}
