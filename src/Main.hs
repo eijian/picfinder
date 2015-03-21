@@ -6,6 +6,7 @@ module Main where
 
 import System.Directory
 import System.Environment
+import Data.List
 import Data.List.Split
 import Data.Char
 import Finder
@@ -16,9 +17,17 @@ delimiter = "/"
 main :: IO ()
 main = do
   ds <- getArgs
-  fs <- mapM getFileLists ds
-  ss <- findSame $ concat fs
+  let (r, t, ds') = parseOpt ds
+  fs <- mapM getFileLists ds'
+  ss <- findSame r t $ concat fs
   putGroups ss
+
+parseOpt :: [String] -> (Int, Int, [FilePath])
+parseOpt (d:ds)
+  | "-p" `isPrefixOf` d = (r, t, ds)
+  | otherwise           = (8, 8, d:ds)
+  where
+    [r, t] = map (read :: String -> Int) (splitOn "," (drop 2 d))
 
 getFileLists :: FilePath -> IO [FilePath]
 getFileLists d = do
