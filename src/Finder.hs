@@ -16,10 +16,10 @@ type Image = (FingerPrint, FilePath)
 type Edge = (FilePath, FilePath)
 
 -- (r, t) = resolution of fingerprint and threshold of difference
-findSame :: Int -> Int -> [FilePath] -> IO [[FilePath]]
-findSame r t fs = do
+findSame :: Int -> Int -> Int -> [FilePath] -> IO [[FilePath]]
+findSame r t s fs = do
   fps <- mapM (getFingerPrint r) fs
-  let ps = matchImage (fromIntegral t) $ zip fps fs
+  let ps = matchImage (fromIntegral t) (fromIntegral s) $ zip fps fs
   return $ deduplicate ps ps
 
 deduplicate :: [[FilePath]] -> [[FilePath]] -> [[FilePath]]
@@ -32,24 +32,32 @@ deduplicate xs (y:ys)
     isProperSubset x = x /= y && y `isInfixOf` x
 
 -- t = threshold
-matchImage :: Word8 -> [Image] -> [[FilePath]]
-matchImage t []     = []
-matchImage t (x:[]) = []
-matchImage t (x:xs)
- | ps == []  = matchImage t xs
- | otherwise = (snd x:ps):matchImage t xs
+matchImage :: Word8 -> Double -> [Image] -> [[FilePath]]
+matchImage t s []     = []
+matchImage t s (x:[]) = []
+matchImage t s (x:xs)
+ | ps == []  = matchImage t s xs
+ | otherwise = (snd x:ps):matchImage t s xs
  where
-   ps = roundRobin t x xs
+   ps = roundRobin t s x xs
 
-roundRobin :: Word8 -> Image -> [Image] -> [FilePath]
-roundRobin t x [] = []
-roundRobin t x (y:ys) = isSame t x y ++ roundRobin t x ys
+roundRobin :: Word8 -> Double -> Image -> [Image] -> [FilePath]
+roundRobin t s x [] = []
+roundRobin t s x (y:ys) = isSame t s x y ++ roundRobin t s x ys
 
-isSame :: Word8 -> Image -> Image -> [FilePath]
-isSame t x y = if any differ (zip (fst x) (fst y)) then [] else [snd y]
+isSame :: Word8 -> Double -> Image -> Image -> [FilePath]
+isSame t s x y
+  | fst x == [] = []
+  | fst y == [] = []
+  | otherwise = if overcount > limit then [] else [snd y]
   where
+    xy = zip (fst x) (fst y)
+    limit = ceiling (fromIntegral(length xy) * (100 - s) / 100.0)
+    overcount = length $ filter differ xy
     differ :: (Word8, Word8) -> Bool
     differ (a, b) = (if a > b then a - b else b - a) > t
+
+-- | otherwise = if any differ (zip (fst x) (fst y)) then [] else [snd y]
 
 getFingerPrint :: Int -> FilePath -> IO FingerPrint
 getFingerPrint r f = do

@@ -17,17 +17,17 @@ delimiter = "/"
 main :: IO ()
 main = do
   ds <- getArgs
-  let (r, t, ds') = parseOpt ds
+  let (r, t, s, ds') = parseOpt ds
   fs <- mapM getFileLists ds'
-  ss <- findSame r t $ concat fs
+  ss <- findSame r t s $ concat fs
   putGroups ss
 
-parseOpt :: [String] -> (Int, Int, [FilePath])
+parseOpt :: [String] -> (Int, Int, Int, [FilePath])
 parseOpt (d:ds)
-  | "-p" `isPrefixOf` d = (r, t, ds)
-  | otherwise           = (8, 8, d:ds)
+  | "-p" `isPrefixOf` d = (r, t, s, ds)
+  | otherwise           = (8, 8, 100, d:ds)
   where
-    [r, t] = map (read :: String -> Int) (splitOn "," (drop 2 d))
+    [r, t, s] = map (read :: String -> Int) (splitOn "," (drop 2 d))
 
 getFileLists :: FilePath -> IO [FilePath]
 getFileLists d = do
@@ -35,9 +35,12 @@ getFileLists d = do
   return $ map (\ x -> d ++ delimiter ++ x) (filter isJpeg fs)
 
 isJpeg :: FilePath -> Bool
-isJpeg f = if ext == picext then True else False
+isJpeg f
+  | head f == '.' = False
+  | ext /= picext = False
+  | otherwise     = True
   where
-  ext = map toUpper (last $ splitOn "." f)
+    ext = map toUpper (last $ splitOn "." f)
 
 putGroups :: [[FilePath]] -> IO ()
 putGroups [] = putStr ""
